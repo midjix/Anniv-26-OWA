@@ -1,0 +1,74 @@
+# =====================================================================
+#  Pit Crush — anniversaire d'Oana — compose à coller sur le NAS
+#  Mise à jour automatique : push sur GitHub → image GHCR → Watchtower
+#  ⚠️ Remplace les 3 valeurs  <<< A REMPLIR >>>  avant de lancer.
+# =====================================================================
+name: anniv-oana
+
+services:
+  pit-crush:
+    image: ghcr.io/midjix/anniv-26-owa:latest
+    container_name: anniv-oana-app
+    restart: unless-stopped
+    environment:
+      OANA_NAME: "Oana"
+      OANA_AGE: "26"
+      ADMIN_PASSWORD: "<<< A REMPLIR : mot de passe régie, 12 caractères min >>>"
+      PUBLIC_URL: "https://anniv.midjix-lab.com"
+      TRUST_PROXY: "1"
+    volumes:
+      - anniv-data:/data              # partie en cours + archives
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 100
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks: [anniv-internal]        # aucun port ouvert sur le NAS
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: anniv-oana-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "<<< A REMPLIR : jeton du tunnel Cloudflare >>>"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    depends_on:
+      pit-crush:
+        condition: service_healthy
+    networks: [anniv-internal, anniv-egress]
+
+  # Surveille GHCR toutes les 60 s et redéploie le site à chaque nouvelle image.
+  # Ne touche QUE les conteneurs portant le label watchtower.enable (tes autres stacks sont ignorées).
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: anniv-oana-watchtower
+    restart: unless-stopped
+    environment:
+      WATCHTOWER_POLL_INTERVAL: "60"
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_INCLUDE_RESTARTING: "true"
+      TZ: "Europe/Paris"
+      # Si le dépôt/paquet GHCR est PRIVÉ : ton pseudo + un token GitHub (scope read:packages uniquement)
+      REPO_USER: "midjix"
+      REPO_PASS: "<<< A REMPLIR : token GitHub read:packages (ou supprime ces 2 lignes si le paquet est public) >>>"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    networks: [anniv-egress]
+
+networks:
+  anniv-internal:
+    internal: true
+  anniv-egress: {}
+
+volumes:
+  anniv-data:

@@ -7,35 +7,28 @@ URL : **https://anniv.midjix-lab.com** · invités : **/jouer** · régie : **/r
 
 ---
 
-## 🚀 Déploiement sur le NAS (UGREEN DXP4800 Plus)
+## 🚀 Déploiement sur le NAS (mise à jour automatique)
 
-### 1. Créer le tunnel Cloudflare
-1. Dans Cloudflare **Zero Trust → Networks → Tunnels → Create a tunnel** (type *Cloudflared*), nomme-le `anniv-oana`.
-2. Choisis **Docker** et copie le **jeton** (la longue chaîne après `--token`).
-3. Dans l'onglet **Public Hostname**, ajoute :
-   - Subdomain `anniv`, Domain `midjix-lab.com`
-   - Service **HTTP** → `pit-crush:8080`
-
-### 2. Récupérer le projet et configurer
-```bash
-git clone https://github.com/midjix/Anniv-26-OWA.git
-cd Anniv-26-OWA
-cp .env.example .env
-nano .env        # OANA_AGE=26, ADMIN_PASSWORD, CLOUDFLARE_TUNNEL_TOKEN
 ```
-Pour générer un mot de passe de régie : `openssl rand -base64 18`
-
-### 3. Lancer
-```bash
-docker compose up -d --build
-docker compose logs -f
+git push ──► GitHub Actions (tests + build + photos) ──► ghcr.io/midjix/anniv-26-owa:latest
+                                                             │
+                                  NAS : Watchtower vérifie toutes les 60 s ◄┘ → redémarre le site
 ```
-Pendant le build, les photos des activités sont téléchargées. Les lignes `ok`/`fail` s'affichent dans les logs de build. Si une photo échoue, une illustration la remplace.
 
-### Mettre à jour
-```bash
-git pull && docker compose up -d --build
-```
+### 1. Tunnel Cloudflare
+Zero Trust → **Networks → Tunnels → Create a tunnel** (Cloudflared) → choisis **Docker** et copie le **jeton**.
+Onglet **Public Hostname** : `anniv` . `midjix-lab.com` → Service **HTTP** → `pit-crush:8080`.
+
+### 2. Token GitHub pour le NAS (si le dépôt est privé)
+GitHub → Settings → Developer settings → **Personal access tokens (classic)** → scope **`read:packages` uniquement**.
+
+### 3. Coller le compose
+Copie [`deploy/docker-compose.nas.yml`](deploy/docker-compose.nas.yml) dans l'appli Docker du NAS (Projet → Créer), remplis les 3 valeurs `<<< A REMPLIR >>>` et lance.
+
+C'est tout : chaque `git push` sur `main` met le site à jour en ~5 minutes (le temps du build GitHub + 60 s max).
+Suivi : onglet **Actions** du dépôt, et `docker logs anniv-oana-watchtower` sur le NAS.
+
+> Alternative sans GHCR : `git clone` + `.env` + `docker compose up -d --build` avec le `docker-compose.yml` à la racine (build local, pas de mise à jour auto).
 
 ---
 
@@ -92,7 +85,7 @@ git pull && docker compose up -d --build
 | Questions, réponses, poids | `server/content.js` → `QUESTIONS` (relance `npm test` pour vérifier l'équilibre) |
 | Textes des activités | `server/content.js` → `ACTIVITIES` |
 | Message d'anniversaire | `server/content.js` → `BIRTHDAY` |
-| Tes propres photos | dépose `f4-1.jpg`, `spa-2.jpg`… dans `photos/`, puis `docker compose restart pit-crush` |
+| Tes propres photos | dépose `f4-1.jpg`, `spa-2.jpg`… dans `photos/`, puis commit + push |
 
 ## 🛠️ Développement local
 ```bash

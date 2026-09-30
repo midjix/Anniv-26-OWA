@@ -1,6 +1,4 @@
 node_modules/
 .env
 data/
-photos/*
-!photos/LISEZ-MOI.txt
 *.log
