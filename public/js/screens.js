@@ -91,8 +91,7 @@ function gallery(photos, fallbackCar) {
   return wrap;
 }
 
-export function matchCard(v) {
-  const m = v.match;
+export function matchCard(v, m = v.match) {
   const car = carById(v, m.car);
   return h('article', { class: 'profile' },
     h('div', { class: 'profile__media' },
@@ -168,6 +167,51 @@ export function matchScreen(role, ctx) {
     },
     update(el, v) { ctx.update?.(el, v); },
   };
+}
+
+/* ---------------- Classement complet des activités (Oana, après le match) ---------------- */
+export function rankingButton(v) {
+  const b = h('button', { class: 'btn btn--ghost btn--block', type: 'button', text: 'Voir le classement de toutes les voitures 🏁' });
+  b.addEventListener('click', () => openRanking(v));
+  return b;
+}
+
+function openRanking(v) {
+  const body = h('div', { class: 'sheet__body' });
+  const close = () => { wrap.classList.remove('is-in'); setTimeout(() => wrap.remove(), 300); document.body.classList.remove('no-scroll'); };
+  const closeBtn = h('button', { class: 'sheet__close', type: 'button', 'aria-label': 'Fermer', text: '✕', onclick: close });
+  const showList = () => {
+    body.replaceChildren(
+      h('p', { class: 'eyebrow', text: 'Résultat de la course' }),
+      h('h2', { class: 'title display', text: 'Le classement' }),
+      h('p', { class: 'lead', text: 'Touche une voiture pour découvrir son profil.' }),
+      h('ol', { class: 'ranking' }, v.ranking.map((r) => {
+        const car = carById(v, r.car);
+        const row = h('li', {}, h('button', { class: `rank-row ${r.rank === 1 ? 'is-win' : ''}`, type: 'button' },
+          h('span', { class: 'rank-row__pos display', text: `P${r.rank}` }),
+          carBadge(car, { size: 'sm' }),
+          h('span', { class: 'rank-row__main' },
+            h('span', { class: 'rank-row__name', text: r.name }),
+            h('span', { class: 'rank-row__bar' }, h('i', { style: { '--w': `${r.compat}%` } }))),
+          h('span', { class: 'rank-row__pct display', text: `${r.compat} %` }),
+          h('span', { class: 'rank-row__go', 'aria-hidden': 'true', text: '›' })));
+        row.firstChild.addEventListener('click', () => showProfile(r));
+        return row;
+      })));
+    body.scrollTop = 0;
+  };
+  const showProfile = (r) => {
+    const back = h('button', { class: 'link-btn sheet__back', type: 'button', text: '← Retour au classement', onclick: showList });
+    body.replaceChildren(back,
+      h('p', { class: 'eyebrow', text: `P${r.rank} · ${r.compat} % compatibles${r.rank === 1 ? ' · ton match 💘' : ''}` }),
+      matchCard(v, r));
+    body.scrollTop = 0;
+  };
+  const wrap = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true' }, h('div', { class: 'sheet__card' }, closeBtn, body));
+  showList();
+  document.body.append(wrap);
+  document.body.classList.add('no-scroll');
+  requestAnimationFrame(() => wrap.classList.add('is-in'));
 }
 
 /* ---------------- Podium ---------------- */

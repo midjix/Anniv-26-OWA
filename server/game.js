@@ -14,9 +14,14 @@ const { ACTIVITIES, ACTIVITY_IDS, QUESTIONS, BIRTHDAY } = require('./content');
 const NB_Q = QUESTIONS.length;
 const LUCKY_MULT = 2;
 const BET_BONUS = 2777;
-const MAX_POINTS = 1000;
-const MIN_POINTS = 500;
-const SPEED_WINDOW_MS = 20000;
+// Barème d'une bonne réponse (max 1 000, min 500) :
+//   500 pts de base
+// + jusqu'à 300 pts de rapidité (décroît doucement sur 60 s)
+// + jusqu'à 200 pts selon l'ordre d'arrivée parmi ceux qui ont répondu (1er = 200)
+const BASE_POINTS = 500;
+const SPEED_POINTS = 300;
+const ORDER_POINTS = 200;
+const SPEED_WINDOW_MS = 60000;
 const MAX_GUESTS = 80;
 
 // Voitures anonymes : l'association voiture → activité est tirée au sort
@@ -139,10 +144,24 @@ function carRanks(s) {
   return ranks;
 }
 
-function answerPoints(qi, ms) {
+/**
+ * @param qi     index de la question
+ * @param ms     temps de réponse
+ * @param order  rang d'arrivée parmi ceux qui ont répondu (1 = premier)
+ * @param n      nombre total de répondants
+ */
+function answerPoints(qi, ms, order = 1, n = 1) {
   const t = Math.min(Math.max(ms, 0), SPEED_WINDOW_MS) / SPEED_WINDOW_MS;
-  const pts = Math.round(MAX_POINTS - (MAX_POINTS - MIN_POINTS) * t);
+  const speed = SPEED_POINTS * (1 - t);
+  const rank = n > 1 ? ORDER_POINTS * (1 - (order - 1) / (n - 1)) : ORDER_POINTS;
+  const pts = Math.round(BASE_POINTS + speed + rank);
   return QUESTIONS[qi].lucky ? pts * LUCKY_MULT : pts;
+}
+
+/** Rang d'arrivée d'un invité sur une question (1 = premier à répondre). */
+function answerOrder(s, g, qi) {
+  const all = Object.values(s.guests).filter((x) => x.ans[qi]).map((x) => x.ans[qi].ms).sort((a, b) => a - b);
+  return { order: all.indexOf(g.ans[qi].ms) + 1, n: all.length };
 }
 
 /** Points gagnés par un invité sur la question qi (0 si pas révélée/faux). */
@@ -150,7 +169,8 @@ function guestQuestionPoints(s, g, qi) {
   if (qi >= revealedCount(s)) return 0;
   const a = g.ans[qi];
   if (!a || s.answers[qi] == null || a.o !== s.answers[qi]) return 0;
-  return answerPoints(qi, a.ms);
+  const { order, n } = answerOrder(s, g, qi);
+  return answerPoints(qi, a.ms, order, n);
 }
 
 function guestPoints(s, g) {
@@ -343,6 +363,24 @@ function matchView(s) {
   };
 }
 
+/** Classement complet des activités, révélé à Oana une fois le match trouvé. */
+function rankingView(s) {
+  const sc = carScores(s, NB_Q);
+  const win = sc[s.winner] || 1;
+  const base = compat(s);
+  return CAR_IDS.slice()
+    .sort((a, b) => (b === s.winner) - (a === s.winner) || sc[b] - sc[a])
+    .map((car, i) => {
+      const a = ACTIVITIES[s.carMap[car]];
+      return {
+        car, rank: i + 1,
+        compat: car === s.winner ? base : Math.min(base - 1, Math.round((base * sc[car]) / win)),
+        name: a.name, tagline: a.tagline, place: a.place, bio: a.bio,
+        description: a.description, facts: a.facts, photos: a.photos.map((p) => `/media/${p}.jpg`),
+      };
+    });
+}
+
 /**
  * @param {object} s  state
  * @param {{role:'oana'|'guest'|'admin'|'anon', gid?:string}} who
@@ -390,6 +428,7 @@ function view(s, who, live, now = Date.now()) {
     v.match = matchView(s);
     v.betWinners = Object.values(s.guests).filter((g) => g.bet === s.winner).map((g) => g.name);
   }
+  if ((s.phase === 'match' || s.phase === 'podium') && who.role === 'oana') v.ranking = rankingView(s);
   if (s.phase === 'podium') v.podium = leaderboard(s).slice(0, 10).map(({ name, points, rank }) => ({ name, points, rank }));
 
   if (who.role === 'oana') {
@@ -407,7 +446,9 @@ function view(s, who, live, now = Date.now()) {
     const lb = leaderboard(s);
     const mine = lb.find((r) => r.gid === who.gid);
     v.me = { name: g.name, bet: g.bet, points: mine.points, rank: mine.rank, betWon: mine.betWon, of: lb.length };
-    if (s.phase === 'question' || s.phase === 'reveal') v.myAnswer = g.ans[s.q] || null;
+    if (s.phase === 'question' || s.phase === 'reveal') {
+      v.myAnswer = g.ans[s.q] ? { ...g.ans[s.q], order: answerOrder(s, g, s.q).order } : null;
+    }
     if (s.phase === 'reveal') v.gained = guestQuestionPoints(s, g, s.q);
     if (s.phase === 'tiebreak' && s.tie) v.myVote = s.tie.votes[who.gid] || null;
   }

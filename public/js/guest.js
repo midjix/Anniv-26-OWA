@@ -28,7 +28,7 @@ const joinScreen = {
       h('p', { class: 'login__tag', text: closed ? 'La course est terminée 🏁 Merci d’être venu !' : 'Oana cherche son match au volant. Parie sur la bonne voiture et devine ses réponses.' }),
       closed ? null : h('ul', { class: 'rules' },
         h('li', {}, h('b', { text: '🎟 Pari' }), ' : +2 777 pts si ta voiture gagne'),
-        h('li', {}, h('b', { text: '⚡ Rapidité' }), ' : jusqu’à 1 000 pts par bonne réponse'),
+        h('li', {}, h('b', { text: '⚡ Rapidité' }), ' : 500 à 1 000 pts par bonne réponse, selon ton temps et ton ordre d’arrivée'),
         h('li', {}, h('b', { text: '🍀 Question 7' }), ' : points doublés')),
       closed ? null : form);
   },
@@ -93,7 +93,8 @@ const questionScreen = {
     if (v.myAnswer) {
       el.classList.add('is-locked');
       el.querySelectorAll('.kbtn').forEach((b) => b.classList.toggle('is-sel', Number(b.dataset.i) === v.myAnswer.o));
-      el.querySelector('.locked__t').textContent = `Réponse verrouillée en ${(v.myAnswer.ms / 1000).toFixed(1).replace('.', ',')} s · ${v.counts.answered}/${Math.max(v.counts.connected, v.counts.answered)} ont répondu`;
+      const o = v.myAnswer.order;
+      el.querySelector('.locked__t').textContent = `Réponse verrouillée en ${(v.myAnswer.ms / 1000).toFixed(1).replace('.', ',')} s · ${o === 1 ? '1er·e à répondre ⚡' : `${o}e à répondre`} · ${v.counts.answered}/${Math.max(v.counts.connected, v.counts.answered)} ont répondu`;
     }
   },
 };

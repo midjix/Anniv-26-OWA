@@ -56,6 +56,8 @@ services:
       WATCHTOWER_CLEANUP: "true"
       WATCHTOWER_INCLUDE_RESTARTING: "true"
       TZ: "Europe/Paris"
+      # Le Docker du NAS refuse l'API 1.25 utilisée par défaut par Watchtower
+      DOCKER_API_VERSION: "1.40"
       # Si le dépôt/paquet GHCR est PRIVÉ : ton pseudo + un token GitHub (scope read:packages uniquement)
       REPO_USER: "midjix"
       REPO_PASS: "<<< A REMPLIR : token GitHub read:packages (ou supprime ces 2 lignes si le paquet est public) >>>"

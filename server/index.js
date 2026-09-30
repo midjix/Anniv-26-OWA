@@ -414,9 +414,9 @@ async function handleApi(req, res, url, ip) {
 
 function serveMedia(req, res, url) {
   const m = /^\/media\/([a-z0-9]+-\d)\.jpg$/.exec(url.pathname);
-  // Les photos ne sont servies qu'une fois le match révélé, et seulement celles du gagnant.
+  // Les photos ne sont servies qu'une fois le match révélé (le classement complet est alors visible).
   if (!m || !state.winner || (state.phase !== 'match' && state.phase !== 'podium')) return fail(res, 404, 'Introuvable.');
-  const photos = require('./content').ACTIVITIES[state.carMap[state.winner]].photos;
+  const photos = Object.values(require('./content').ACTIVITIES).flatMap((a) => a.photos);
   if (!photos.includes(m[1])) return fail(res, 404, 'Introuvable.');
   for (const dir of CFG.mediaDirs) for (const ext of ['jpg', 'jpeg', 'webp', 'png']) {
     const file = path.join(dir, `${m[1]}.${ext}`);

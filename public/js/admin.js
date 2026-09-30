@@ -13,9 +13,19 @@ async function load() {
 }
 
 function showLogin() {
-  const pwd = h('input', { class: 'field__input', type: 'password', autocomplete: 'current-password', placeholder: 'Mot de passe régie' });
+  const pwd = h('input', { id: 'pwd', class: 'field__input', type: 'password', autocapitalize: 'off', spellcheck: 'false', autocomplete: 'current-password', placeholder: 'Mot de passe régie' });
   const btn = h('button', { class: 'btn btn--love btn--block', type: 'submit', text: 'Entrer' });
-  const form = h('form', { class: 'login__form' }, h('label', { class: 'field' }, h('span', { class: 'field__label', text: 'Mot de passe' }), pwd), btn);
+  const eye = h('button', { class: 'field__eye', type: 'button', 'aria-label': 'Afficher le mot de passe', 'aria-pressed': 'false', text: '👁' });
+  eye.addEventListener('click', () => {
+    const show = pwd.type === 'password';
+    pwd.type = show ? 'text' : 'password';
+    eye.textContent = show ? '🙈' : '👁';
+    eye.setAttribute('aria-pressed', String(show));
+    eye.setAttribute('aria-label', show ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+    pwd.focus();
+  });
+  const form = h('form', { class: 'login__form' },
+    h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'pwd', text: 'Mot de passe' }), h('div', { class: 'field__wrap' }, pwd, eye)), btn);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     try { await api('admin/login', { password: pwd.value }); load(); } catch (err) { toast(err.message, 'error'); }

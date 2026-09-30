@@ -1,6 +1,6 @@
 import { h, $, api, action, connect, reconnect, createStage, confirmModal, toast, buzz, LETTERS, plural } from './core.js';
 import { createCircuit } from './circuit.js';
-import { startScreen, tieScreen, matchScreen, podiumScreen, FINALE_MS } from './screens.js';
+import { startScreen, tieScreen, matchScreen, podiumScreen, rankingButton, FINALE_MS } from './screens.js';
 import { serverNow } from './core.js';
 
 const stage = createStage($('#stage'));
@@ -132,7 +132,16 @@ const questionScreen = {
   leave: 'swipe',
   mount(v) {
     const reveal = h('button', { class: 'btn btn--love btn--block', type: 'button', text: 'Révéler ma réponse 💘' });
-    action(reveal, () => api('oana/reveal'));
+    action(reveal, async () => {
+      const { answered, connected } = last.counts;
+      const missing = Math.max(0, connected - answered);
+      if (missing > 0 && !(await confirmModal({
+        title: 'Tout le monde n’a pas répondu',
+        text: `${missing} ${missing > 1 ? 'amis n’ont' : 'ami n’a'} pas encore répondu. Si tu révèles maintenant, ${missing > 1 ? 'ils ne pourront plus' : 'il ne pourra plus'} répondre à cette question.`,
+        ok: 'Révéler quand même', cancel: 'Attendre',
+      }))) return;
+      await api('oana/reveal');
+    });
     const back = h('button', { class: 'link-btn', type: 'button', text: '← Question précédente', hidden: !v.canBack });
     action(back, async () => {
       if (await confirmModal({ title: 'Revenir en arrière ?', text: 'Tu pourras modifier ta réponse à la question précédente. Les voitures reculeront en conséquence.', ok: 'Oui, revenir' })) await api('oana/back');
@@ -210,10 +219,10 @@ const revealScreen = {
 /* ---------------- Match & podium ---------------- */
 const match = matchScreen('oana', {
   circuit, dock,
-  extras: () => {
+  extras: (v) => {
     const podium = h('button', { class: 'btn btn--love btn--block btn--xl', type: 'button', text: 'Annoncer le podium 🏆' });
     action(podium, () => api('oana/podium'));
-    return [h('div', { class: 'match__cta' }, podium, replayBtn())];
+    return [h('div', { class: 'match__cta' }, podium, v.ranking ? rankingButton(v) : null, replayBtn())];
   },
 });
 function replayBtn() {
@@ -223,7 +232,7 @@ function replayBtn() {
   });
   return b;
 }
-const podium = podiumScreen('oana', () => [h('div', { class: 'match__cta' }, replayBtn())]);
+const podium = podiumScreen('oana', (v) => [h('div', { class: 'match__cta' }, v.ranking ? rankingButton(v) : null, replayBtn())]);
 const tie = tieScreen('oana');
 
 /* ---------------- Routage ---------------- */

@@ -99,9 +99,10 @@ test('les vues navigateur ne divulguent ni poids, ni activités avant le match',
 });
 
 test('points invités : rapidité, question 7 doublée, bonus de pari', () => {
-  assert.equal(game.answerPoints(0, 0), 1000);
-  assert.equal(game.answerPoints(0, 20000), 500);
-  assert.equal(game.answerPoints(0, 60000), 500);
+  assert.equal(game.answerPoints(0, 0, 1, 1), 1000);
+  assert.equal(game.answerPoints(0, 30000, 1, 1), 850, 'seul joueur à 30 s');
+  assert.equal(game.answerPoints(0, 60000, 3, 3), 500, 'dernier et très lent');
+  assert.equal(game.answerPoints(0, 90000, 2, 3), 600);
   assert.equal(game.answerPoints(6, 0), 2000, 'Q7 doublée');
   const s = game.newState(0);
   const g1 = game.actions.guestJoin(s, 0, 'Rapide', 'a');
@@ -117,7 +118,7 @@ test('points invités : rapidité, question 7 doublée, bonus de pari', () => {
   game.actions.reveal(s, now + 12000);
   const lb = game.leaderboard(s);
   assert.equal(lb[0].name, 'Rapide'); assert.equal(lb[0].points, 1000);
-  assert.equal(lb[1].points, 750);
+  assert.equal(lb[1].points, 750, '10 s (250) + 2e sur 2 (0) + base 500');
   assert.throws(() => game.actions.guestAnswer(s, now, g1, 1), /Trop tard/);
 });
 
