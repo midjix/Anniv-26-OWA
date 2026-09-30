@@ -1,0 +1,17 @@
+{
+  "name": "pit-crush",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site d'anniversaire d'Oana : questionnaire façon appli de rencontre qui révèle son cadeau de pilotage.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "OANA_AGE=27 ADMIN_PASSWORD=dev-password-123 COOKIE_SECURE=0 node --watch server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "qrcode-generator": "2.0.4"
+  },
+  "license": "UNLICENSED"
+}

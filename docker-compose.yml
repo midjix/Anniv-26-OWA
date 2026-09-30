@@ -1,0 +1,48 @@
+# Pit Crush — anniversaire d'Oana
+# Démarrage : docker compose up -d --build
+name: anniv-oana
+
+services:
+  pit-crush:
+    build: .
+    image: pit-crush:local
+    container_name: anniv-oana-app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - anniv-data:/data            # partie en cours + archives (survit aux redémarrages)
+      - ./photos:/app/photos:ro     # tes photos perso (facultatif)
+    # Durcissement
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 100
+    # Aucun port exposé sur le NAS : seul le tunnel Cloudflare y accède.
+    networks: [anniv-internal]
+
+  cloudflared:
+    # Conseil : après le premier « docker compose pull », fige la version (ex : cloudflare/cloudflared:2025.x.y).
+    image: cloudflare/cloudflared:latest
+    container_name: anniv-oana-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Renseigne CLOUDFLARE_TUNNEL_TOKEN dans .env}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    depends_on:
+      pit-crush:
+        condition: service_healthy
+    networks: [anniv-internal, anniv-egress]
+
+networks:
+  anniv-internal:
+    internal: true    # réseau privé app ⇄ tunnel, sans accès internet
+  anniv-egress: {}    # sortie internet pour le tunnel uniquement
+
+volumes:
+  anniv-data:

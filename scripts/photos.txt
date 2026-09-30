@@ -1,0 +1,14 @@
+# id  url   (téléchargées au build Docker ; en cas d'échec, une illustration prend le relais)
+gt-1 https://media.sport-decouverte.com/images/productcard/t365x365/34960/0/stage-en-porsche-718-cayman-gt4-rs--circuit-de-mettet.webp?v=lu02G
+gt-2 https://media.sport-decouverte.com/images/productcard/t365x365/34960/1/stage-en-porsche-718-cayman-gt4-rs--circuit-de-mettet.webp?v=EgGYN
+gt-3 https://media.sport-decouverte.com/images/circuitlargedesktop/t1920x500/35/0/circuit-de-mettetjpg.webp?v=2PV2W
+rallye-1 https://media.sport-decouverte.com/images/productcard/t365x365/26850/0/stage-de-pilotage-rallye-sur-le-circuit-terre-d-issoire.webp?v=kGN0c
+rallye-2 https://media.sport-decouverte.com/images/productcard/t365x365/26850/1/stage-de-pilotage-rallye-sur-le-circuit-terre-d-issoire.webp?v=ba75c
+rallye-3 https://media.sport-decouverte.com/images/productcard/t365x365/26850/2/stage-de-pilotage-rallye-sur-le-circuit-terre-d-issoire.webp?v=vj7HX
+meteo-1 https://www.racb-shop.com/466-large_default/stage-conduite-conditions-difficiles.jpg
+meteo-2 https://www.racb-shop.com/461-large_default/stage-conduite-conditions-difficiles.jpg
+meteo-3 https://www.racb-shop.com/463-large_default/stage-conduite-conditions-difficiles.jpg
+spa-1 https://www.racb-shop.com/414-large_default/racb-racing-experience-victory.jpg
+spa-2 https://www.racb-shop.com/415-large_default/racb-racing-experience-victory.jpg
+spa-3 https://www.racb-shop.com/412-large_default/racb-racing-experience-victory.jpg
+f4-1 https://media.sport-decouverte.com/images/disciplinelargedesktop/t1920x500/569/0/stage-de-pilotage-monoplace.webp?v=MMN4i
