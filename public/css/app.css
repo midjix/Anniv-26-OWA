@@ -478,3 +478,12 @@ body[data-phase=question] .bg__glow, body[data-phase=reveal] .bg__glow { backgro
 .rank-row__bar i { display: block; height: 100%; width: var(--w); background: var(--grad); animation: grow 1s var(--ease) .3s both; }
 .rank-row__pct { font-size: 20px; }
 .rank-row__go { color: var(--faint); font-size: 22px; }
+
+/* ---------- Mode test ---------- */
+body[data-mode=test]::after { content: '🧪 MODE TEST'; position: fixed; left: 50%; top: calc(18px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 130; padding: 5px 12px; border-radius: 999px; background: var(--amber); color: #111; font: 800 13px/1 var(--font-d); letter-spacing: .08em; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+.mode-box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin: 0 0 14px; padding: 16px 18px; border-radius: 18px; border: 2px solid var(--line-2); background: var(--card); }
+.mode-box.is-test { border-color: var(--amber); background: rgba(255, 194, 26, .08); }
+.mode-box.is-real { border-color: var(--ok); }
+.mode-box__label { margin: 0; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.mode-box__value { margin: 4px 0; font-size: 30px; }
+.mode-box .fine { text-align: left; margin: 0; }

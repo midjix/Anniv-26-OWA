@@ -9,7 +9,12 @@
  * arrière et changer une réponse recalcule automatiquement voitures et points.
  */
 const crypto = require('node:crypto');
-const { ACTIVITIES, ACTIVITY_IDS, QUESTIONS, BIRTHDAY } = require('./content');
+const REAL = require('./content');
+const TEST = require('./content-test');
+const { ACTIVITY_IDS, QUESTIONS } = REAL;
+
+/** Contenu (questions, activités, message) de la partie : réel ou mode test. */
+const C = (s) => (s && s.mode === 'test' ? TEST : REAL);
 
 const NB_Q = QUESTIONS.length;
 const LUCKY_MULT = 2;
@@ -54,7 +59,7 @@ function shuffle(arr, rnd = Math.random) {
   return a;
 }
 
-function newState(now = Date.now(), prev = null) {
+function newState(now = Date.now(), prev = null, mode = undefined) {
   const acts = shuffle(ACTIVITY_IDS);
   const carMap = {};
   CAR_IDS.forEach((c, i) => { carMap[c] = acts[i]; });
@@ -67,6 +72,7 @@ function newState(now = Date.now(), prev = null) {
   }
   return {
     v: 1,
+    mode: mode || (prev && prev.mode) || 'real',
     runId: `${new Date(now).toISOString().slice(0, 19).replace(/[:T]/g, '-')}-${rid(3)}`,
     createdAt: now,
     phase: 'lobby',
@@ -101,7 +107,7 @@ function activityScores(s, upto = revealedCount(s)) {
   for (let i = 0; i < upto; i++) {
     const o = s.answers[i];
     if (o == null) continue;
-    for (const [a, v] of Object.entries(QUESTIONS[i].options[o].w)) sc[a] += v;
+    for (const [a, v] of Object.entries(C(s).QUESTIONS[i].options[o].w)) sc[a] += v;
   }
   return sc;
 }
@@ -223,7 +229,7 @@ const actions = {
 
   oanaAnswer(s, now, o) {
     must(s.phase === 'question', 'bad_phase', 'Pas de question en cours.');
-    must(Number.isInteger(o) && o >= 0 && o < QUESTIONS[s.q].options.length, 'bad_input', 'Réponse invalide.', 400);
+    must(Number.isInteger(o) && o >= 0 && o < C(s).QUESTIONS[s.q].options.length, 'bad_input', 'Réponse invalide.', 400);
     s.answers[s.q] = o;
   },
 
@@ -296,7 +302,7 @@ const actions = {
     const g = s.guests[gid];
     must(g, 'unknown', 'Invité inconnu.', 403);
     must(s.phase === 'question', 'bad_phase', 'Trop tard pour cette question !');
-    must(Number.isInteger(o) && o >= 0 && o < QUESTIONS[s.q].options.length, 'bad_input', 'Réponse invalide.', 400);
+    must(Number.isInteger(o) && o >= 0 && o < C(s).QUESTIONS[s.q].options.length, 'bad_input', 'Réponse invalide.', 400);
     must(!g.ans[s.q], 'already', 'Réponse déjà verrouillée.');
     g.ans[s.q] = { o, ms: Math.max(0, now - s.qOpenedAt[s.q]) };
   },
@@ -328,8 +334,8 @@ function cleanName(name) {
 /* Vues envoyées aux navigateurs (jamais le state brut)                 */
 /* ------------------------------------------------------------------ */
 
-function questionView(qi) {
-  const q = QUESTIONS[qi];
+function questionView(s, qi) {
+  const q = C(s).QUESTIONS[qi];
   return { n: qi + 1, text: q.text, lucky: !!q.lucky, options: q.options.map((o) => o.text) };
 }
 
@@ -348,7 +354,7 @@ function compat(s) {
 }
 
 function matchView(s) {
-  const a = ACTIVITIES[s.carMap[s.winner]];
+  const a = C(s).ACTIVITIES[s.carMap[s.winner]];
   return {
     car: s.winner,
     compat: compat(s),
@@ -359,7 +365,7 @@ function matchView(s) {
     description: a.description,
     facts: a.facts,
     photos: a.photos.map((p) => `/media/${p}.jpg`),
-    birthday: BIRTHDAY,
+    birthday: C(s).BIRTHDAY,
   };
 }
 
@@ -371,7 +377,7 @@ function rankingView(s) {
   return CAR_IDS.slice()
     .sort((a, b) => (b === s.winner) - (a === s.winner) || sc[b] - sc[a])
     .map((car, i) => {
-      const a = ACTIVITIES[s.carMap[car]];
+      const a = C(s).ACTIVITIES[s.carMap[car]];
       return {
         car, rank: i + 1,
         compat: car === s.winner ? base : Math.min(base - 1, Math.round((base * sc[car]) / win)),
@@ -390,6 +396,7 @@ function view(s, who, live, now = Date.now()) {
   const v = {
     now,
     runId: s.runId,
+    mode: s.mode || 'real',
     phase: s.phase,
     phaseAt: s.phaseAt,
     lightsOutAt: s.lightsOutAt,
@@ -410,7 +417,7 @@ function view(s, who, live, now = Date.now()) {
     role: who.role,
   };
 
-  if (s.phase === 'question' || s.phase === 'reveal') v.question = questionView(s.q);
+  if (s.phase === 'question' || s.phase === 'reveal') v.question = questionView(s, s.q);
   if (s.phase === 'reveal') {
     v.oanaAnswer = s.answers[s.q];
     v.distribution = distribution(s, s.q);
@@ -421,7 +428,7 @@ function view(s, who, live, now = Date.now()) {
     v.tie = {
       cars: s.tie.cars,
       votes,
-      bios: Object.fromEntries(s.tie.cars.map((c) => [c, ACTIVITIES[s.carMap[c]].bio])),
+      bios: Object.fromEntries(s.tie.cars.map((c) => [c, C(s).ACTIVITIES[s.carMap[c]].bio])),
     };
   }
   if (s.phase === 'match' || s.phase === 'podium') {
@@ -460,6 +467,7 @@ function view(s, who, live, now = Date.now()) {
 function adminView(s, live) {
   return {
     runId: s.runId,
+    mode: s.mode || 'real',
     phase: s.phase,
     q: s.q,
     oanaLocked: !!s.oanaSid,
@@ -467,8 +475,8 @@ function adminView(s, live) {
     carMap: s.carMap,
     activityScores: activityScores(s, NB_Q),
     answers: s.answers.map((o, i) => ({
-      question: QUESTIONS[i].text,
-      answer: o == null ? null : QUESTIONS[i].options[o].text,
+      question: C(s).QUESTIONS[i].text,
+      answer: o == null ? null : C(s).QUESTIONS[i].options[o].text,
     })),
     winner: s.winner ? { car: s.winner, activity: s.carMap[s.winner] } : null,
     guests: leaderboard(s).map((r) => ({ ...r, bet: s.guests[r.gid].bet })),
@@ -476,7 +484,7 @@ function adminView(s, live) {
 }
 
 module.exports = {
-  NB_Q, CARS, CAR_IDS, BET_BONUS, MAX_GUESTS, GameError,
+  C, NB_Q, CARS, CAR_IDS, BET_BONUS, MAX_GUESTS, GameError,
   newState, actions, view, adminView, leaderboard,
   activityScores, carScores, carProgress, revealedCount, answerPoints, cleanName, rid,
 };

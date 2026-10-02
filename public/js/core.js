@@ -76,6 +76,7 @@ export function connect(page, onState) {
       pill.classList.remove('is-on');
       let v; try { v = JSON.parse(e.data); } catch { return; }
       syncClock(v.now);
+      if (v.mode) document.body.dataset.mode = v.mode;
       onState(v);
     });
     es.addEventListener('open', () => { lastMsg = Date.now(); });

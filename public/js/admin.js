@@ -40,6 +40,24 @@ function paint({ current: c, runs }) {
   action(reset, async () => {
     if (await confirmModal({ title: 'Tout effacer ?', text: 'Nouvelle partie vierge : invités supprimés, profil Oana libéré. La partie en cours est archivée.', ok: 'Remettre à zéro', danger: true })) { await api('admin/reset'); load(); }
   });
+  const isTest = c.mode === 'test';
+  const toggle = h('button', { class: `btn ${isTest ? 'btn--love' : 'btn--ghost'}`, type: 'button', text: isTest ? 'Repasser en mode RÉEL 🎂' : 'Activer le mode TEST 🧪' });
+  action(toggle, async () => {
+    const ok = await confirmModal({
+      title: isTest ? 'Revenir au mode réel ?' : 'Passer en mode test ?',
+      text: isTest
+        ? 'Les vraies questions et les vrais cadeaux reviennent. La partie test est archivée, les testeurs sont déconnectés et le profil Oana est libéré.'
+        : 'Questions et activités factices pour faire tester le site sans rien dévoiler. La partie en cours est archivée et remise à zéro (invités effacés, profil Oana libéré).',
+      ok: isTest ? 'Mode réel' : 'Mode test', danger: !isTest,
+    });
+    if (ok) { await api('admin/mode', { mode: isTest ? 'real' : 'test' }); toast(isTest ? 'Mode RÉEL activé 🎂' : 'Mode TEST activé 🧪'); load(); }
+  });
+  const modeBox = h('div', { class: `mode-box ${isTest ? 'is-test' : 'is-real'}` },
+    h('div', {},
+      h('p', { class: 'mode-box__label', text: 'Contenu actuel' }),
+      h('p', { class: 'mode-box__value display', text: isTest ? '🧪 MODE TEST' : '🎂 MODE RÉEL' }),
+      h('p', { class: 'fine', text: isTest ? 'Questions et activités factices. Pense à repasser en mode réel avant l’anniversaire !' : 'Les vraies questions et les vrais cadeaux sont actifs.' })),
+    toggle);
   const unlock = h('button', { class: 'btn btn--ghost', type: 'button', text: 'Libérer le profil d’Oana' });
   action(unlock, async () => { await api('admin/unlock'); toast('Profil libéré : Oana peut se reconnecter.'); load(); });
 
@@ -47,6 +65,7 @@ function paint({ current: c, runs }) {
   root.replaceChildren(h('section', { class: 'admin' },
     h('h1', { class: 'title display', text: 'Régie · Pit Crush' }),
     h('p', { class: 'lead', text: `Partie ${c.runId} · phase « ${c.phase} » · question ${c.q + 1} · Oana ${c.live.oanaOnline ? 'en ligne 🟢' : 'hors ligne ⚪'} · profil ${c.oanaLocked ? 'verrouillé 🔒' : 'libre'} · ${c.live.connectedGuests} invités en ligne` }),
+    modeBox,
     h('div', { class: 'admin__actions' }, unlock, reset),
     h('p', { class: 'fine', text: '⚠️ Cette page révèle les scores cachés. Ne la montre pas à Oana !' }),
     h('div', { class: 'admin__grid' },

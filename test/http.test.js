@@ -14,7 +14,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pc-'));
 
 test.before(async () => {
   srv = spawn(process.execPath, [path.join(__dirname, '..', 'server', 'index.js')], {
-    env: { ...process.env, PORT, OANA_AGE: '26', ADMIN_PASSWORD: 'un-mot-de-passe-solide', COOKIE_SECURE: '0', DATA_DIR: dir, PUBLIC_URL: B },
+    env: { ...process.env, PORT, OANA_AGE: '26', ADMIN_PASSWORD: 'un-mot-de-passe-solide', COOKIE_SECURE: '0', DATA_DIR: dir, PUBLIC_URL: B, TRUST_PROXY: '1' },
     stdio: 'ignore',
   });
   for (let i = 0; i < 50; i++) {
@@ -101,4 +101,19 @@ test('régie : mot de passe requis, limitation des tentatives', async () => {
   let last;
   for (let i = 0; i < 8; i++) last = await post('admin/login', { password: 'faux' });
   assert.equal(last.status, 429);
+});
+
+test('régie : bascule mode test / réel', async () => {
+  const ok = await post('admin/login', { password: 'un-mot-de-passe-solide' }, { 'CF-Connecting-IP': '9.9.9.9' });
+  const c = sid(ok).replace('pc_sid', 'pc_adm');
+  assert.equal((await post('admin/mode', { mode: 'test' })).status, 401, 'refusé sans session régie');
+  assert.equal((await post('admin/mode', { mode: 'test' }, { cookie: c })).status, 200);
+  let st = await (await fetch(`${B}/api/admin/state`, { headers: { cookie: c } })).json();
+  assert.equal(st.current.mode, 'test');
+  assert.equal(st.current.answers[0].question, 'Ton petit-déjeuner idéal ?');
+  const v = await firstEvent(null, 'guest');
+  assert.equal(v.mode, 'test');
+  assert.equal((await post('admin/mode', { mode: 'real' }, { cookie: c })).status, 200);
+  st = await (await fetch(`${B}/api/admin/state`, { headers: { cookie: c } })).json();
+  assert.equal(st.current.mode, 'real');
 });

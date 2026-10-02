@@ -365,10 +365,21 @@ const ROUTES = {
   } },
   'admin/reset': { auth: 'admin', handler: (req, res) => {
     archiveRun();
-    state = game.newState();
+    state = game.newState(Date.now(), null, state.mode);
     clearTimeout(goTimer);
     commit();
     console.log('[admin] remise à zéro complète');
+    send(res, 200, { ok: true });
+  } },
+  'admin/mode': { auth: 'admin', handler: (req, res, b) => {
+    const mode = b.mode === 'test' ? 'test' : b.mode === 'real' ? 'real' : null;
+    if (!mode) return fail(res, 400, 'Mode invalide.');
+    archiveRun();
+    // Changer de mode = nouvelle partie vierge (invités effacés, profil Oana libéré)
+    state = game.newState(Date.now(), null, mode);
+    clearTimeout(goTimer);
+    commit();
+    console.log(`[admin] mode ${mode === 'test' ? 'TEST' : 'RÉEL'} activé (nouvelle partie)`);
     send(res, 200, { ok: true });
   } },
   'admin/unlock': { auth: 'admin', handler: (req, res) => { state.oanaSid = null; commit(); console.log('[admin] profil Oana libéré'); send(res, 200, { ok: true }); } },
@@ -416,7 +427,7 @@ function serveMedia(req, res, url) {
   const m = /^\/media\/([a-z0-9]+-\d)\.jpg$/.exec(url.pathname);
   // Les photos ne sont servies qu'une fois le match révélé (le classement complet est alors visible).
   if (!m || !state.winner || (state.phase !== 'match' && state.phase !== 'podium')) return fail(res, 404, 'Introuvable.');
-  const photos = Object.values(require('./content').ACTIVITIES).flatMap((a) => a.photos);
+  const photos = Object.values(game.C(state).ACTIVITIES).flatMap((a) => a.photos);
   if (!photos.includes(m[1])) return fail(res, 404, 'Introuvable.');
   for (const dir of CFG.mediaDirs) for (const ext of ['jpg', 'jpeg', 'webp', 'png']) {
     const file = path.join(dir, `${m[1]}.${ext}`);

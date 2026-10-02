@@ -207,3 +207,44 @@ test('rejouer garde les invités mais efface paris et réponses', () => {
   assert.equal(s2.oanaSid, 'x');
   assert.equal(s2.phase, 'lobby');
 });
+
+test('mode test : aucune vraie question ni vraie activité dans les vues, même après le match', () => {
+  const TEST = require('../server/content-test');
+  const s = game.newState(0, null, 'test');
+  const gid = game.actions.guestJoin(s, 0, 'Testeur', 'h');
+  const live = { connectedGuests: 1, oanaOnline: true };
+  const realTexts = [...QUESTIONS.map((q) => q.text), ...QUESTIONS.flatMap((q) => q.options.map((o) => o.text)),
+    ...Object.values(ACTIVITIES).flatMap((a) => [a.name, a.place, a.bio, a.tagline])];
+  const check = () => {
+    for (const who of [{ role: 'oana' }, { role: 'guest', gid }]) {
+      const txt = JSON.stringify(game.view(s, who, live, 0));
+      for (const t of realTexts) assert.ok(!txt.includes(t), `fuite en phase ${s.phase} : ${t}`);
+      assert.equal(game.view(s, who, live, 0).mode, 'test');
+    }
+  };
+  let now = 0;
+  game.actions.start(s, now, () => 0); game.actions.go(s, (now = s.lightsOutAt + 1400));
+  for (let i = 0; i < 10; i++) {
+    game.actions.oanaAnswer(s, ++now, 0); check();
+    game.actions.reveal(s, ++now); check();
+    game.actions.next(s, ++now);
+    if (s.phase === 'tiebreak') game.actions.tiePick(s, ++now, s.tie.cars[0]);
+  }
+  assert.equal(s.phase, 'match');
+  check();
+  const v = game.view(s, { role: 'oana' }, live, 0);
+  assert.ok(Object.values(TEST.ACTIVITIES).some((a) => a.name === v.match.name));
+  assert.equal(v.ranking.length, 5);
+  // « Rejouer » conserve le mode test
+  assert.equal(game.newState(1, s).mode, 'test');
+  assert.equal(game.newState(1).mode, 'real');
+});
+
+test('mode test : même grille de points que le vrai jeu (équilibre identique)', () => {
+  const TEST = require('../server/content-test');
+  assert.equal(TEST.QUESTIONS.length, QUESTIONS.length);
+  TEST.QUESTIONS.forEach((q, i) => {
+    assert.equal(!!q.lucky, !!QUESTIONS[i].lucky);
+    q.options.forEach((o, j) => assert.deepEqual(o.w, QUESTIONS[i].options[j].w));
+  });
+});
