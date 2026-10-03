@@ -131,13 +131,13 @@ const QUESTIONS = [
       { text: 'Coup de foudre, on emménage ensemble la première semaine', w: { gt: 2, f4: 3 } },
       { text: 'On accélère fort, mais on sait freiner au bon moment', w: { gt: 1, spa: 3, f4: 1 } },
       { text: 'Ça glisse, ça dérape… mais on retombe toujours sur nos pattes', w: { rallye: 3, meteo: 2 } },
-      { text: 'Doucement mais sûrement : la confiance d’abord', w: { meteo: 4, spa: 1 } },
+      { text: 'Patience absolue… comme pour trouver une place au parking du Janson un samedi', w: { meteo: 4, spa: 1 } },
     ],
   },
   {
     text: 'Ton red flag absolu ?',
     options: [
-      { text: 'Il roule en monospace beige', w: { gt: 3, f4: 2 } },
+      { text: 'Il met 10 minutes à faire un créneau à Ixelles (la reine, c’est moi 👑)', w: { gt: 3, f4: 2 } },
       { text: 'Il a peur de salir ses baskets', w: { rallye: 4, meteo: 1 } },
       { text: 'Il ne sait pas qui est champion du monde de F1', w: { spa: 2, f4: 3 } },
       { text: 'Il panique à la première goutte de pluie', w: { rallye: 1, meteo: 3, spa: 1 } },
@@ -178,7 +178,7 @@ const QUESTIONS = [
       { text: '« Elle a piloté comme en F1, la vraie »', w: { spa: 1, f4: 4 } },
       { text: '« Elle a dompté un des circuits les plus mythiques du monde »', w: { gt: 1, spa: 4 } },
       { text: '« Elle a fait hurler les plus belles voitures du monde »', w: { gt: 3, rallye: 1, spa: 1 } },
-      { text: '« Rien ne l’arrête : ni la boue, ni la pluie, ni le verglas »', w: { rallye: 3, meteo: 2 } },
+      { text: '« Rien ne l’arrête : ni la boue, ni le verglas, ni un déménagement Bruxelles–Lux avec Thor en copilote 🐶 »', w: { rallye: 3, meteo: 2 } },
     ],
   },
 ];
@@ -186,7 +186,7 @@ const QUESTIONS = [
 /* Message affiché avec le Match (modifiable librement). */
 const BIRTHDAY = {
   title: 'La mulți ani, Oana !',
-  text: 'Joyeux anniversaire ❤️ Ton match est trouvé, il ne reste plus qu’à attacher ta ceinture. Bonne route, pilote !',
+  text: 'Joyeux anniversaire ❤️ Ton match est trouvé, il ne reste plus qu’à attacher ta ceinture. Bonne route, pilote ! (Thor te souhaite aussi un joyeux anniversaire 🐶)',
 };
 
 module.exports = { ACTIVITIES, ACTIVITY_IDS, QUESTIONS, BIRTHDAY };
